@@ -1,3 +1,6 @@
+task.txt
+input[0-9].txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
