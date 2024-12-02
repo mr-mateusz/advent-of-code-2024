@@ -15,6 +15,19 @@ def is_row_safe(row: list[int]) -> bool:
     return is_safe(row, -3, -1) or is_safe(row, 1, 3)
 
 
+def is_row_safe_with_tolerance(row: list[int]) -> bool:
+    if is_row_safe(row):
+        return True
+
+    for i in range(len(row)):
+        modified_row = row[:]
+        modified_row.pop(i)
+
+        if is_row_safe(modified_row):
+            return True
+    return False
+
+
 if __name__ == "__main__":
     path = "input.txt"
 
@@ -25,3 +38,6 @@ if __name__ == "__main__":
 
     # Part 1
     print(sum([is_row_safe(row) for row in data]))
+
+    # Part 2
+    print(sum([is_row_safe_with_tolerance(row) for row in data]))
