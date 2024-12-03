@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+CHECK_DO_INSTRUCTION = False
+
 
 class State:
     def __init__(self) -> None:
@@ -16,10 +18,15 @@ class StateStart(State):
     def make_transition(self, _input: str) -> State:
         if _input == 'm':
             return StateM()
+        if CHECK_DO_INSTRUCTION:
+            if _input == 'd':
+                return StateD()
         return StateStart()
 
     def make_action(self, _input: str, fsm: FSM) -> None:
         fsm.reset()
+        # Start State needs to make the transition immediately:
+        fsm.state = self.make_transition(_input)
 
 
 class StateM(State):
@@ -126,22 +133,90 @@ class State2D3(State):
 
 
 class StateRB(State):
+    # Final State
     def make_action(self, _input: str, fsm: FSM) -> None:
         fsm.multiply()
-        # This is the final state. After action is performed, the state of the FSM must be reset and its state restored
-        fsm.reset()
-        fsm.state = StateStart()
+
+
+class StateD(State):
+    def make_transition(self, _input: str) -> State:
+        if _input == 'o':
+            return StateDO()
+        return StateStart()
+
+
+class StateDO(State):
+    def make_transition(self, _input: str) -> State:
+        if _input == '(':
+            return StateDOLB()
+        if _input == 'n':
+            return StateDON()
+        return StateStart()
+
+
+class StateDOLB(State):
+    def make_transition(self, _input: str) -> State:
+        if _input == ')':
+            return StateDORB()
+        return StateStart()
+
+
+class StateDORB(State):
+    # Final state
+    def make_action(self, _input: str, fsm: FSM) -> None:
+        fsm.enable()
+
+
+class StateDON(State):
+    def make_transition(self, _input: str) -> State:
+        if _input == '\'':
+            return StateDONa()
+        return StateStart()
+
+
+class StateDONa(State):
+    def make_transition(self, _input: str) -> State:
+        if _input == 't':
+            return StateDONaT()
+        return StateStart()
+
+
+class StateDONaT(State):
+    def make_transition(self, _input: str) -> State:
+        if _input == '(':
+            return StateDONaTLB()
+        return StateStart()
+
+
+class StateDONaTLB(State):
+    def make_transition(self, _input: str) -> State:
+        if _input == ')':
+            return StateDONaTRB()
+        return StateStart()
+
+
+class StateDONaTRB(State):
+    # Final State
+    def make_action(self, _input: str, fsm: FSM) -> None:
+        fsm.disable()
 
 
 class FSM:
-    def __init__(self, initial_state: State, verbose: bool = False) -> None:
+    def __init__(self, initial_state: State, is_enabled: bool = True, verbosity_level: int = 0) -> None:
         self.state = initial_state
 
+        self.is_enabled = is_enabled
         self.x_buffer = None
         self.y_buffer = None
         self.total = 0
 
-        self.__verbose = verbose
+        self.__verbosity_level = verbosity_level
+
+    def enable(self) -> None:
+        self.is_enabled = True
+
+    def disable(self) -> None:
+        self.is_enabled = False
 
     def push_x(self, _input: str) -> None:
         if not self.x_buffer:
@@ -156,17 +231,21 @@ class FSM:
             self.y_buffer += _input
 
     def multiply(self) -> None:
-        if self.__verbose:
-            print(f'multiplying: {self.x_buffer}, {self.y_buffer}')
-        self.total += int(self.x_buffer) * int(self.y_buffer)
+        if self.is_enabled:
+            if self.__verbosity_level:
+                print(f'multiplying: {self.x_buffer}, {self.y_buffer}')
+            self.total += int(self.x_buffer) * int(self.y_buffer)
+        else:
+            if self.__verbosity_level:
+                print(f'not multiplying (disabled): {self.x_buffer}, {self.y_buffer}')
 
     def reset(self) -> None:
         self.x_buffer = None
         self.y_buffer = None
 
     def step(self, _input: str) -> None:
-        # if self.__verbose:
-        #     print(f'State: {self.state}, input: {_input}')
+        if self.__verbosity_level >= 2:
+            print(f'State: {self.state}, input: {_input}')
         self.state = self.state.make_transition(_input)
         self.state.make_action(_input, self)
 
@@ -177,9 +256,20 @@ if __name__ == "__main__":
     with open(path, "r") as f:
         data = f.read()
 
-    fsm = FSM(StateStart(), verbose=False)
+    fsm = FSM(StateStart(), verbosity_level=0)
 
     for char in data:
         fsm.step(char)
 
+    # Part 1
+    print(fsm.total)
+
+    CHECK_DO_INSTRUCTION = True
+
+    fsm = FSM(StateStart(), verbosity_level=0)
+
+    for char in data:
+        fsm.step(char)
+
+    # Part 2
     print(fsm.total)
