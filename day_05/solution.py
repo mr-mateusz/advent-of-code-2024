@@ -14,7 +14,7 @@ def read_and_parse(path: str) -> tuple[list[str], list[str]]:
     return rules, updates
 
 
-def is_correct(page_number_order: list[int], rules: Mapping[int, set]):
+def is_correct(page_number_order: list[int], rules: Mapping[int, set]) -> bool:
     prev_occurrences = set()
     for pn in page_number_order:
         if rules[pn].intersection(prev_occurrences):
