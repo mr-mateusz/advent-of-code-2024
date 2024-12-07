@@ -1,4 +1,4 @@
-def is_ok(line: tuple[int, list[int]]) -> bool:
+def is_ok(line: tuple[int, list[int]], try_concat: bool = False) -> bool:
     """Input tuple: (expected_result, [values])"""
     stack = [line]
 
@@ -12,6 +12,8 @@ def is_ok(line: tuple[int, list[int]]) -> bool:
                 # If values are equal we still check in case of 0 (for addiction) and 1 (for multiplication)
                 stack.append((expected, [fv + sv] + values[2:]))
                 stack.append((expected, [fv * sv] + values[2:]))
+                if try_concat:
+                    stack.append((expected, [int(str(fv) + str(sv))] + values[2:]))
             if fv > expected:
                 # The value is already too big, we don't check further in this "branch"
                 pass
@@ -37,4 +39,12 @@ if __name__ == '__main__':
             total += line[0]
 
     # Part 1
+    print(total)
+
+    total = 0
+    for line in data:
+        if is_ok(line, try_concat=True):
+            total += line[0]
+
+    # Part 2
     print(total)
