@@ -17,8 +17,7 @@ class Pos(NamedTuple):
         return 0 <= self.r < len(data) and 0 <= self.c < len(data[0])
 
 
-def count_antinodes(data: list[str]) -> int:
-    # Get antennas positions
+def find_antennas_positions(data: list[str]) -> dict[str, list[Pos]]:
     antennas_positions = {}
     for r in range(len(data)):
         for c in range(len(data[0])):
@@ -27,6 +26,11 @@ def count_antinodes(data: list[str]) -> int:
                     antennas_positions[data[r][c]].append(Pos(r, c))
                 except KeyError:
                     antennas_positions[data[r][c]] = [Pos(r, c)]
+    return antennas_positions
+
+
+def count_antinodes(data: list[str]) -> int:
+    antennas_positions = find_antennas_positions(data)
 
     antinode_positions = set()
     for antenna_type, positions in antennas_positions.items():
@@ -41,6 +45,29 @@ def count_antinodes(data: list[str]) -> int:
     return len(antinode_positions)
 
 
+def count_antinodes_with_resonant_harmonics(data: list[str]) -> int:
+    antennas_positions = find_antennas_positions(data)
+
+    antinode_positions = set()
+    for antenna_type, positions in antennas_positions.items():
+        for i in range(len(positions)):
+            for j in range(i + 1, len(positions)):
+                pos = positions[i]
+                other_pos = positions[j]
+                dist = other_pos - pos
+
+                possible_antinode = pos
+                while possible_antinode.is_in(data):
+                    antinode_positions.add(possible_antinode)
+                    possible_antinode = possible_antinode + dist
+
+                possible_antinode = pos
+                while possible_antinode.is_in(data):
+                    antinode_positions.add(possible_antinode)
+                    possible_antinode = possible_antinode - dist
+    return len(antinode_positions)
+
+
 if __name__ == "__main__":
     path = 'input.txt'
 
@@ -50,4 +77,9 @@ if __name__ == "__main__":
     res = count_antinodes(data)
 
     # Part 1
+    print(res)
+
+    res = count_antinodes_with_resonant_harmonics(data)
+
+    # Part 2
     print(res)
