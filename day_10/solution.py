@@ -4,7 +4,7 @@ def neighbours(data: list[list], r: int, c: int) -> list[tuple[int, int]]:
     return neighbours
 
 
-def find_unique_trails(data: list[list], start_r: int, start_c: int) -> int:
+def find_unique_destinations(data: list[list], start_r: int, start_c: int) -> int:
     to_check = [(start_r, start_c)]
 
     peaks_found = set()
@@ -22,6 +22,27 @@ def find_unique_trails(data: list[list], start_r: int, start_c: int) -> int:
     return len(peaks_found)
 
 
+def find_unique_trails(data: list[list], start_r: int, start_c: int) -> int:
+    # ((row_idx, col_idx), history)
+    to_check = [((start_r, start_c), ())]
+
+    trails_found = set()
+    while to_check:
+        (r, c), history = to_check.pop(0)
+        current_val = data[r][c]
+
+        if current_val == 9:
+            history = history + tuple((r, c))
+            trails_found.add(((r, c), history))
+        else:
+            for n in neighbours(data, r, c):
+                if data[n[0]][n[1]] == current_val + 1:
+                    history = history + tuple((r, c))
+                    to_check.append((n, history))
+
+    return len(trails_found)
+
+
 if __name__ == '__main__':
     path = 'input.txt'
 
@@ -34,6 +55,16 @@ if __name__ == '__main__':
     for r in range(len(data)):
         for c in range(len(data[0])):
             if data[r][c] == 0:
+                total_score += find_unique_destinations(data, r, c)
+
+    # Part 1
+    print(total_score)
+
+    total_score = 0
+    for r in range(len(data)):
+        for c in range(len(data[0])):
+            if data[r][c] == 0:
                 total_score += find_unique_trails(data, r, c)
 
+    # Part 2
     print(total_score)
