@@ -39,7 +39,7 @@ class Warehouse:
         return cls(grid_shape, robot, walls, boxes)
 
     def print(self) -> None:
-        grid_as_characters = [['.' for _ in range(self.grid_shape[0])] for _ in range(len(self.grid_shape[1]))]
+        grid_as_characters = [['.' for _ in range(self.grid_shape[1])] for _ in range(self.grid_shape[0])]
 
         self.robot.update_str_map(grid_as_characters)
         for wall in self.walls:
