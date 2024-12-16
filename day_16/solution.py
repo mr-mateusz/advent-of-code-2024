@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from itertools import count
 from queue import PriorityQueue
-from typing import NamedTuple
+from typing import NamedTuple, Iterable
 
 
 class Pos(NamedTuple):
@@ -67,19 +67,32 @@ def get_neighbours(data: list[str], graph_pos: GraphPosition) -> list[tuple[Grap
     return neighbours
 
 
-def shortest_path_len(data: list[str]) -> int:
+def backtrack_paths(node, path: list[GraphPosition], previous_node_dct: dict[GraphPosition, list[GraphPosition]]) \
+        -> Iterable[list[GraphPosition]]:
+    if node is None:
+        yield path
+    else:
+        for previous_node in previous_node_dct[node]:
+            for paths_to_previous in backtrack_paths(previous_node, path + [node], previous_node_dct):
+                yield paths_to_previous
+
+
+def shortest_paths(data: list[str]) -> tuple[int, list[list[GraphPosition]]]:
     start_pos = find_one(data, 'S')
     start_pos = GraphPosition(start_pos, Direction.E)
 
     end_pos = find_one(data, 'E')
-
-    print(start_pos, end_pos)
 
     tiebreaker = count()
 
     distances = {
         start_pos: 0
     }
+
+    previous_nodes = {
+        start_pos: [None]
+    }
+
     visited = set()
 
     to_visit = PriorityQueue()
@@ -93,18 +106,17 @@ def shortest_path_len(data: list[str]) -> int:
             continue
 
         if current_pos.pos == end_pos:
-            return current_dist
+            return current_dist, list(backtrack_paths(current_pos, [], previous_nodes))
 
         for neighbour_pos, dist in get_neighbours(data, current_pos):
             dist_via_current = current_dist + dist
 
-            if neighbour_pos in distances:
-                if distances[neighbour_pos] > dist_via_current:
-                    distances[neighbour_pos] = dist_via_current
-                    to_visit.put((dist_via_current, next(tiebreaker), neighbour_pos))
-            else:
+            if neighbour_pos not in distances or distances[neighbour_pos] > dist_via_current:
                 distances[neighbour_pos] = dist_via_current
+                previous_nodes[neighbour_pos] = [current_pos]
                 to_visit.put((dist_via_current, next(tiebreaker), neighbour_pos))
+            elif distances[neighbour_pos] == dist_via_current:
+                previous_nodes[neighbour_pos].append(current_pos)
 
         visited.add(current_pos)
 
@@ -115,5 +127,14 @@ if __name__ == '__main__':
     with open(path, 'r') as f:
         data = [l.strip() for l in f]
 
+    shortest_path_len, shortest_paths = shortest_paths(data)
+
     # Part 1
-    print(shortest_path_len(data))
+    print(shortest_path_len)
+
+    unique_positions = set()
+    for path in shortest_paths:
+        unique_positions.update([graph_pos.pos for graph_pos in path])
+
+    # Part 2
+    print(len(unique_positions))
