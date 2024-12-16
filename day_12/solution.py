@@ -1,14 +1,31 @@
+from collections import defaultdict
 from typing import Sequence
 
 
 def get_neighbours(pos) -> list[tuple]:
     r, c = pos
     return [
-        (r - 1, c),
-        (r + 1, c),
-        (r, c - 1),
-        (r, c + 1)
+        (r - 1, c),  # N
+        (r + 1, c),  # S
+        (r, c - 1),  # W
+        (r, c + 1)  # E
     ]
+
+
+def count_spans(values: list) -> int:
+    if not values:
+        return 0
+
+    prev = None
+    spans = 1
+    for v in sorted(values):
+        if prev is None:
+            prev = v
+            continue
+        if prev + 1 != v:
+            spans += 1
+        prev = v
+    return spans
 
 
 class Region:
@@ -23,6 +40,32 @@ class Region:
         for plot in self.garden_plots:
             total_perimeter += len(set(get_neighbours(plot)).difference(self.garden_plots))
         return total_perimeter
+
+    def n_sides(self) -> int:
+        directions = ['N', 'S', 'W', 'E']
+
+        border_n = defaultdict(list)
+        border_s = defaultdict(list)
+        border_w = defaultdict(list)
+        border_e = defaultdict(list)
+        for plot in self.garden_plots:
+            neighbours = get_neighbours(plot)
+            neighbours_with_directions = zip(neighbours, directions)
+            out_of_region_neighbours = [n for n in neighbours_with_directions if n[0] not in self.garden_plots]
+
+            for n in out_of_region_neighbours:
+                match n:
+                    case (r, c), 'N':
+                        border_n[r].append(c)
+                    case (r, c), 'S':
+                        border_s[r].append(c)
+                    case (r, c), 'W':
+                        border_w[c].append(r)
+                    case (r, c), 'E':
+                        border_e[c].append(r)
+
+        total = sum(count_spans(v) for border in (border_n, border_s, border_w, border_e) for _, v in border.items())
+        return total
 
 
 def is_in(pos: Sequence[int], data: list[str]) -> bool:
@@ -75,4 +118,11 @@ if __name__ == '__main__':
         total_price += r.area() * r.perimeter()
 
     # Part 1
+    print(total_price)
+
+    total_price = 0
+    for r in regions:
+        total_price += r.area() * r.n_sides()
+
+    # Part 2
     print(total_price)
