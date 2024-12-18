@@ -138,6 +138,10 @@ class Cdv(Instruction):
         computer.register_c = result
 
 
+def to_list(instructions: str) -> list[int]:
+    return [int(i) for i in instructions.split(',')]
+
+
 class Computer:
     def __init__(self, register_states: list[int], instructions: list[int],
                  instruction_map: Mapping[int, Instruction]) -> None:
@@ -145,7 +149,7 @@ class Computer:
         self.register_b = register_states[1]
         self.register_c = register_states[2]
 
-        self.instructions = instructions
+        self.instructions = to_list(instructions)
 
         self.instruction_map = instruction_map
 
@@ -163,6 +167,40 @@ class Computer:
         self.instruction_map[opcode].execute(operand, self)
         return True
 
+    def collect_stdout(self):
+        return ','.join(str(val) for val in self.stdout)
+
+
+def run_program(reg_a_initial: int, instructions: str, instruction_map: Mapping[int, Instruction]) -> str:
+    computer = Computer([reg_a_initial, 0, 0], instructions, instruction_map)
+
+    while True:
+        instruction_performed = computer.interpret()
+        if not instruction_performed:
+            break
+
+    return computer.collect_stdout()
+
+
+def find_quine(current_reg_a_bits: str, instructions: str, instruction_map: Mapping[int, Instruction]) -> list[int]:
+    # Fot the initial call
+    if current_reg_a_bits:
+        output = run_program(int(current_reg_a_bits, 2), instructions, instruction_map)
+    else:
+        output = ''
+
+    if output == instructions:
+        return [int(current_reg_a_bits, 2)]
+
+    if not instructions.endswith(output):
+        return []
+
+    results = []
+    for val in range(8):
+        val_binary = format(val, '03b')
+        results.extend(find_quine(current_reg_a_bits + val_binary, instructions, instruction_map))
+    return results
+
 
 if __name__ == '__main__':
     path = 'input.txt'
@@ -173,7 +211,7 @@ if __name__ == '__main__':
     register_states, instructions = data.split('\n\n')
 
     register_states = [int(l.split()[-1]) for l in register_states.split('\n')]
-    instructions = [int(i) for i in instructions.replace('Program: ', '').strip().split(',')]
+    instructions = instructions.replace('Program: ', '').strip()
 
     instruction_mapping = {index: instr for index, instr in enumerate([Adv(), Bxl(), Bst(), Jnz(),
                                                                        Bxc(), Out(), Bdv(), Cdv()])}
@@ -187,3 +225,11 @@ if __name__ == '__main__':
 
     # Part 1
     print(','.join(str(val) for val in computer.stdout))
+
+    # Part 2
+    reg_a_val = find_quine('', instructions, instruction_mapping)
+    print(reg_a_val[0])
+
+    # Check
+    print(run_program(reg_a_val[0], instructions, instruction_mapping))
+    print(run_program(reg_a_val[0], instructions, instruction_mapping) == instructions)
